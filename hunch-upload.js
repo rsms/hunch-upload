@@ -1,4 +1,4 @@
-if(typeof console=='undefined')var console={log:function(){}};
+if(typeof console=='undefined')var console={log() {}};
 if(typeof hunch=='undefined')var hunch={};
 
 /**
@@ -38,14 +38,14 @@ if(typeof hunch=='undefined')var hunch={};
  *
  * @return An array of hunch.FileUpload objects.
  */
-hunch.upload = function(fileInputElement, handlerOrURL) {
+hunch.upload = (fileInputElement, handlerOrURL) => {
 	var fus = [];
 	var maxSize = 0.0;
 	try {
 		maxSize = Number(fileInputElement.getAttribute('maxlength'));
 	} catch(e) {}
 
-	var _upload_file = function(file) {
+	var _upload_file = file => {
 		// Create object
 		var fu = new hunch.FileUpload(file);
 		fu.fileInputElement = fileInputElement;
@@ -127,7 +127,7 @@ hunch.FileUpload = function(file) {
 	// local temporary variables
 	var self = this; // local binding
 	/** URL complete with parameters */
-	var composeURL = function(url) {
+	var composeURL = url => {
 		self.opaqueProperties[self.urlParameterNames.filename] = self.name;
 		return hunch.util.addParamsToURL(url, self.opaqueProperties);
 	};
@@ -135,21 +135,21 @@ hunch.FileUpload = function(file) {
 	// Public member events
 
 	/** Called when the request has been set up */
-	this.beforeSend = function() {};
+	this.beforeSend = () => {};
 	/** Called just before the connection is initiated */
-	this.onStart = function() {};
+	this.onStart = () => {};
 	/** Called after a connection has been established, but before the requests begins */
-	this.onConnected = function() {};
+	this.onConnected = () => {};
 	/** Called after the requests has been sent */
-	this.onSent = function() {};
+	this.onSent = () => {};
 
 	/** Called when the progress of the upload was updated */
-	this.onProgress = function() {};
+	this.onProgress = () => {};
 
 	/** Called when the upload completed */
-	this.onSuccess = function(responseText) {};
+	this.onSuccess = responseText => {};
 	/** Called when the upload was aborted by the user */
-	this.onAbort = function() {};
+	this.onAbort = () => {};
 	/** Called when the upload failed with error */
 	this.onError = function(exception, responseText) {
 		// default impl. emits debug msg and propagates any exception up the chain 
@@ -161,7 +161,7 @@ hunch.FileUpload = function(file) {
 	};
 
 	/** Called after the finished (<textStatus> is "success", "abort" or "error") */
-	this.onComplete = function(textStatus, responseText) {};
+	this.onComplete = (textStatus, responseText) => {};
 
 	// Private member events
 	this._onComplete = function(status, responseText) {
@@ -205,7 +205,7 @@ hunch.FileUpload = function(file) {
 			}
 
 			// intercept load events for iframe
-			hunch.util.observeEvent(iframe, 'load', function(ev) {
+			hunch.util.observeEvent(iframe, 'load', ev => {
 				// normalize iframe document access
 				if (iframe.contentDocument)
 					iframe.doc = iframe.contentDocument; 
@@ -263,7 +263,7 @@ hunch.FileUpload = function(file) {
 		}
 
 		/** Abort the upload */
-		this.abort = function() {
+		this.abort = () => {
 			// todo: ability to abort compat. form/iframe-based uploads
 			iframe.abort();
 		};
@@ -324,7 +324,7 @@ hunch.FileUpload = function(file) {
 		};
 
 		// Setup XHR event handlers
-		this.xhr.upload.onprogress = function(evt) {
+		this.xhr.upload.onprogress = evt => {
 			if (hunch.debug) console.log('xhr.upload.onprogress', evt);
 			if (evt.lengthComputable) {
 				self.bytesLoaded = evt.loaded;
@@ -340,17 +340,17 @@ hunch.FileUpload = function(file) {
 			self.onProgress();
 		};
 
-		this.xhr.upload.onloadstart = function(evt) {
+		this.xhr.upload.onloadstart = evt => {
 			if (hunch.debug) console.log('xhr.upload.onloadstart', evt);
 			self.onConnected();
 		};
-		this.xhr.upload.onabort = function(evt) {
+		this.xhr.upload.onabort = evt => {
 			if (hunch.debug) console.log('xhr.upload.onabort', evt);
 			self.onAbort(evt);
 			self._onComplete("abort", self.xhr.responseText);
 		};
 
-		this.xhr.onload = function(evt) {
+		this.xhr.onload = evt => {
 			if (hunch.debug) console.log('xhr.upload.onload', evt);
 			self.progress = 1.0;
 			self.bytesLoaded = self.bytesTotal;
@@ -365,7 +365,7 @@ hunch.FileUpload = function(file) {
 			}
 			self._onComplete(textStatus, self.xhr.responseText);
 		};
-		this.xhr.upload.onerror = function(evt) {
+		this.xhr.upload.onerror = evt => {
 			if (hunch.debug) console.log('xhr.upload.onerror', evt);
 			self.onError(null, self.xhr.responseText);
 			self._onComplete("error", self.xhr.responseText);
@@ -396,7 +396,7 @@ hunch.FileUpload = function(file) {
 hunch.FileSizeOutOfBoundsException = function(msg, file) {
 	this.message = msg;
 	this.file = file;
-	this.toString = function() {return 'FileSizeOutOfBoundsException: '+msg;};
+	this.toString = () => 'FileSizeOutOfBoundsException: '+msg;
 };
 
 /**
@@ -407,7 +407,7 @@ hunch.uploadQueue = {
 	sending: false,
 	checkSendTimer: null,
 
-	schedule: function(file, url, method) {
+	schedule(file, url, method) {
 		if (hunch.debug) console.log('uploadQueue: scheduling '+file.name);
 		// we need to know when it's done
 		file._onComplete = function(status, responseText) {
@@ -415,19 +415,19 @@ hunch.uploadQueue = {
 			hunch.uploadQueue.onComplete(file);
 		};
 		// queue
-		hunch.uploadQueue.q.push({file:file, url:url, method:method});
+		hunch.uploadQueue.q.push({file, url, method});
 		if (!hunch.uploadQueue.sending)
 			hunch.uploadQueue.sendNext();
 		else if (hunch.uploadQueue.checkSendTimer == null)
 			hunch.uploadQueue.checkSendTimer = setInterval(hunch.uploadQueue._checkSend, 100);
 	},
 
-	_checkSend: function() {
+	_checkSend() {
 		if (hunch.uploadQueue.sending == false)
 			hunch.uploadQueue.sending.sendNext();
 	},
 
-	sendNext: function() {
+	sendNext() {
 		if (!hunch.uploadQueue.q.length) {
 			if (hunch.debug) console.log('uploadQueue: upload queue empty');
 			if (hunch.uploadQueue.checkSendTimer != null) {
@@ -442,7 +442,7 @@ hunch.uploadQueue = {
 		t.file._xhrSend(t.url, t.method);
 	},
 
-	onComplete: function(file) {
+	onComplete(file) {
 		if (hunch.debug) console.log('uploadQueue: completed '+file.name);
 		hunch.uploadQueue.sending = false;
 		hunch.uploadQueue.sendNext();
@@ -454,7 +454,7 @@ hunch.uploadQueue = {
  */
 hunch.util = {
 	/** Evaluate HTML to DOM struct */
-	evalHTML: function(html){
+	evalHTML(html) {
 		if (!hunch.util.evalHTML.div)
 			hunch.util.evalHTML.div = document.createElement('div');
 		hunch.util.evalHTML.div.innerHTML = html;
@@ -463,14 +463,14 @@ hunch.util = {
 		return el;
 	},
 
-	observeEvent: function(element, type, cb){
+	observeEvent(element, type, cb) {
 		if (window.addEventListener)
 			element.addEventListener(type, cb, false);
 		else if (window.attachEvent)
-			element.attachEvent('on' + type, function(){ cb.call(element, window.event); });
+			element.attachEvent('on' + type, () => { cb.call(element, window.event); });
 	},
 
-	addParamsToURL: function(url, keyvaluepairs) {
+	addParamsToURL(url, keyvaluepairs) {
 		var len = 0;
 		for (var k in keyvaluepairs)
 			len++;
@@ -535,7 +535,7 @@ hunch.capabilities = {
 };
 
 // check capabilities
-(function(){
+((() => {
 
 	// HTML5 File API? ("XHR uploads")
 	if (typeof document != 'undefined' && typeof document.createElement != 'undefined') {
@@ -559,7 +559,7 @@ hunch.capabilities = {
 
 	// summary on console
 	console.log('hunch.capabilities =>', hunch.capabilities);
-})();
+}))();
 
 /* xxx dev test form uploads >> */ //hunch.capabilities.fileAPI = false;
 
